@@ -27,7 +27,7 @@ class BertEmotionBlackBoxed(BlackBox):
         return predictions
 
 
-class Text:
+class TextSample:
     def __init__(self, line: str):
         self.line = line
         self.tokens = line.split()
@@ -76,7 +76,7 @@ class ImportanceEstimator:
         current_score = pred[label]
         return base_score - current_score
 
-    def estimate_all(self, model: Type[BlackBox], text: Text, label: str, base_score: float):
+    def estimate_all(self, model: Type[BlackBox], text: TextSample, label: str, base_score: float):
         result = []
         for (idx, (token, line_without_token)) in enumerate(text.iter_drop_token()):
             importance = self._estimate(model, line_without_token, label, base_score)
@@ -84,23 +84,23 @@ class ImportanceEstimator:
         return list(sorted(result, reverse=True))
 
 
-class Atack:
+class Attack:
     def __init__(self, target: Type[BlackBox], estimator: Type[ImportanceEstimator], verbose: bool = True):
         self.target = target
         self.estimator = estimator
         self.verbose = verbose
 
-    def atack(self, line: str) -> str:
-        text = Text(line)
+    def attack(self, line: str) -> str:
+        text = TextSample(line)
         base_label, base_score = self._get_base_prediction(text.raw())
         importance = self._get_importance(text, base_label, base_score)
-        self._atack(text, importance, base_label, base_score)
+        self._attack(text, importance, base_label, base_score)
         return text.raw()
     
-    def _atack(self, text: Text, imporatance: list[TokenImportance], base_label: str, base_score: float):
+    def _attack(self, text: TextSample, imporatance: list[TokenImportance], base_label: str, base_score: float):
         raise NotImplementedError()
 
-    def _get_importance(self, text: Text, base_label: str, base_score: float) -> list[TokenImportance]:
+    def _get_importance(self, text: TextSample, base_label: str, base_score: float) -> list[TokenImportance]:
         if self.verbose:
             print(f"base label: {base_label} ; base_score: {base_score}")
         importance = self.estimator.estimate_all(self.target, text, base_label, base_score)
@@ -119,8 +119,8 @@ class Atack:
         return top_label, top_score
 
 
-class BurgerAtack(Atack):
-    def _atack(self, text: Text, importance: list[TokenImportance], base_label: str, base_score: float):
+class BurgerAttack(Attack):
+    def _attack(self, text: TextSample, importance: list[TokenImportance], base_label: str, base_score: float):
         n_trials = 5  # just random number
         global_best_score = base_score
         for item in importance:
@@ -188,37 +188,10 @@ def main():
     boxed = BertEmotionBlackBoxed()
     estimator = ImportanceEstimator()
 
-    atack = BurgerAtack(boxed, estimator)
-    atack.atack(line)
+    attack = BurgerAttack(boxed, estimator)
+    attack.attack(line)
     
 
 
 if __name__ == "__main__":
     main()
-
-    """
-    boxed = BertEmotionBlackBoxed()
-
-    # text = Text("I love using transformers. The best part is wide range of support and its easy to use")
-    text = Text("I l0ve using transformers. The b est part is w1de range of support and its easy to use")
-    prediction = boxed.predict(text.raw())
-    pprint.pprint(prediction)
-
-    top_score, top_label = 0, ""
-    for key, val in prediction.items():
-        if val > top_score:
-            top_label = key
-            top_score = val
-
-    print("top label / score: ", top_label, top_score)
-
-    importance = []
-    for (idx, (token, text_without_token)) in enumerate(text.iter_drop_token()):
-        sample_pred = boxed.predict(text_without_token)
-
-        sample_score = sample_pred[top_label]
-        token_importance = top_score - sample_score
-        importance.append((token_importance, idx, token))
-
-    pprint.pprint(list(sorted(importance)))
-    """

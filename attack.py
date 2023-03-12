@@ -70,26 +70,28 @@ class Attack:
 
 def _insert(token: str) -> str:
     """Insert a space into the word"""
-    try:
-        idx = random.randint(1, len(token) - 1)  # TODO: check bounds
-        return token[:idx] + ' ' + token[idx + 1:]
-    except:
-        print("err: ")
+    if len(token) <= 2:
         return token
+    idx = random.randint(1, len(token) - 2)
+    return token[:idx] + ' ' + token[idx + 1:]
 
 
 def _delete(token: str) -> str:
     """Delete a random character of the word except for the first and the last character"""
-    try:
-        idx = random.randint(1, len(token)-1)  # TODO: check bounds
-        return token[:idx] + token[idx + 1:]
-    except:
-        print("err: ")
+    if len(token) <= 2:
         return token
+    idx = random.randint(1, len(token)-2)  # TODO: check bounds
+    return token[:idx] + token[idx + 1:]
 
 
 def _swap(token: str) -> str:
-    raise NotImplementedError()
+    first = random.randint(0, len(token) - 1)
+    second = random.randint(0, len(token) - 1)
+    if first == second:
+        return token
+    arr = list(token)
+    arr[first], arr[second] = arr[second], arr[first]
+    return ''.join(arr)
 
 
 def _subc(token: str) -> str:
@@ -104,6 +106,7 @@ class BurgerAttack(Attack):
         possible_bugs = [
             _insert,
             _delete,
+            _swap,
         ]
 
         for item in importance:

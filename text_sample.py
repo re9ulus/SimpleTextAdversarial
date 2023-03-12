@@ -2,6 +2,7 @@ from typing import Iterator, Tuple
 
 
 class TextSample:
+
     def __init__(self, line: str):
         self.line = line
         self.tokens = line.split()

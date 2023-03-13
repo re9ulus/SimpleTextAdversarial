@@ -1,3 +1,5 @@
+TextBurger inspired simple adversarial atack on text.
+
 Usage example:
 
 ```

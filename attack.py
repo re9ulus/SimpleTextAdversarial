@@ -33,7 +33,12 @@ class ImportanceEstimator:
         return list(sorted(result, reverse=True))
 
 
-class Attack:
+class BaseAttack:
+    """
+    Base class to simplify attack on NLP model
+
+    Inherit your attack from it and override _attack method
+    """
     def __init__(self, target: Type[BlackBox], estimator: Type[ImportanceEstimator], verbose: bool = True):
         self.target = target
         self.estimator = estimator
@@ -51,7 +56,8 @@ class Attack:
 
     def _get_importance(self, text: TextSample, base_label: str, base_score: float) -> list[TokenImportance]:
         if self.verbose:
-            print(f"base label: {base_label} ; base_score: {base_score}")
+            print(f"base label: {base_label}")
+            print(f"score: {base_score}")
         importance = self.estimator.estimate_all(self.target, text, base_label, base_score)
         if self.verbose:
             print("importance:")
@@ -98,7 +104,7 @@ def _subc(token: str) -> str:
     raise NotImplementedError()
 
 
-class BurgerAttack(Attack):
+class BurgerAttack(BaseAttack):
     def _attack(self, text: TextSample, importance: list[TokenImportance], base_label: str, base_score: float):
         n_trials = 5  # just random number
         global_best_score = base_score
@@ -130,10 +136,10 @@ class BurgerAttack(Attack):
                 global_best_score = best_score
                 text.apply_patch(item.idx, best_candidate)
 
-            new_class, _ = self._get_base_prediction(text.patched())
+            new_label, _ = self._get_base_prediction(text.patched())
             if self.verbose:
-                print("patched text: ", text.patched())
-                print(f"new class {new_class}")
-            if new_class != base_label:
+                print(f"new label {new_label}")
+            print("patched text: ", text.patched())
+            if new_label != base_label:
                 break
    

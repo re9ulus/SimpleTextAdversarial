@@ -1,5 +1,4 @@
 from typing import Tuple, Type
-import pprint
 import random
 from blackbox import BlackBox
 from dataclasses import dataclass
@@ -44,12 +43,21 @@ class BaseAttack:
         self.estimator = estimator
         self.verbose = verbose
 
-    def attack(self, line: str) -> str:
+    def attack(self, line: str) -> Tuple[str, str, str]:
         text = TextSample(line)
         base_label, base_score = self._get_base_prediction(text.raw())
         importance = self._get_importance(text, base_label, base_score)
-        self._attack(text, importance, base_label, base_score)
-        return text.raw()
+        new_label = self._attack(text, importance, base_label, base_score)
+        new_line = text.patched()
+        if new_label != base_label:
+            print("success!")
+            print(f"base label: {base_label}")
+            print(f"new  label: {new_label}")
+        else:
+            print(f"fail!")
+            print(f"label {base_label}")
+        print(f"new text: {new_line}")
+        return text.patched(), base_label, new_label
     
     def _attack(self, text: TextSample, imporatance: list[TokenImportance], base_label: str, base_score: float):
         raise NotImplementedError()
@@ -61,8 +69,8 @@ class BaseAttack:
         importance = self.estimator.estimate_all(self.target, text, base_label, base_score)
         if self.verbose:
             print("importance:")
-            # TODO: Print in table
-            pprint.pprint(importance)
+            for item in importance:
+                print(f"{item.importance:.8f}\t{item.token}")
         return importance
 
     def _get_base_prediction(self, line: str) -> Tuple[str, float]:
@@ -100,13 +108,9 @@ def _swap(token: str) -> str:
     return ''.join(arr)
 
 
-def _subc(token: str) -> str:
-    raise NotImplementedError()
-
-
 class BurgerAttack(BaseAttack):
-    def _attack(self, text: TextSample, importance: list[TokenImportance], base_label: str, base_score: float):
-        n_trials = 5  # just random number
+    def _attack(self, text: TextSample, importance: list[TokenImportance], base_label: str, base_score: float) -> str:
+        n_trials = 5  # just random number ¯\_(ツ)_/¯
         global_best_score = base_score
 
         possible_bugs = [
@@ -115,6 +119,7 @@ class BurgerAttack(BaseAttack):
             _swap,
         ]
 
+        new_label = base_label
         for item in importance:
             token = item.token
             candidates = set()
@@ -136,10 +141,10 @@ class BurgerAttack(BaseAttack):
                 global_best_score = best_score
                 text.apply_patch(item.idx, best_candidate)
 
-            new_label, _ = self._get_base_prediction(text.patched())
+            new_label, new_score = self._get_base_prediction(text.patched())
             if self.verbose:
-                print(f"new label {new_label}")
-            print("patched text: ", text.patched())
+                print(f"label: {new_label} / score: {new_score}")
             if new_label != base_label:
                 break
+        return new_label
    

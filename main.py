@@ -10,24 +10,18 @@ def cli():
 
 
 @cli.command("attack")
-@click.option("--line", type=str, required=True)
-def cli_attack(line: str):
+@click.argument("line", type=str, required=True)
+@click.option("--verbose", is_flag=True, show_default=True, default=False)
+def cli_attack(line: str, verbose: bool):
     boxed = BertEmotionBlackBoxed()
     estimator = ImportanceEstimator()
 
-    attack = BurgerAttack(boxed, estimator)
+    attack = BurgerAttack(boxed, estimator, verbose=verbose)
     attack.attack(line)
 
 
 def main():
     cli()
-    # line = "I love using transformers. The best part is wide range of support and its easy to use"
-
-    # boxed = BertEmotionBlackBoxed()
-    # estimator = ImportanceEstimator()
-
-    # attack = BurgerAttack(boxed, estimator)
-    # attack.attack(line)
 
 
 if __name__ == "__main__":

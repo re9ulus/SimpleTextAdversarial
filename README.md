@@ -4,6 +4,7 @@ Usage example:
 
 ```
 python main.py attack  "Feeling my way through the darkness Guided by a beating heart I can't tell where the journey will end But I know where to start"
+
 ; success!
 ; base label: fear
 ; new  label: joy
